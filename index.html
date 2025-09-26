@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0052D4"/>
+    <title>Modern Tiles Calculator</title>
+    <style>
+        /* CSS कोड यहाँ आएगा (कोई बदलाव नहीं) */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        :root {
+            --primary-color: #0052D4; --secondary-color: #65C7F7; --background-color: #f4f7fc;
+            --card-background: #ffffff; --text-color: #333; --label-color: #555;
+            --border-color: #dde2ec; --success-color: #28a745; --danger-color: #dc3545;
+        }
+        body {
+            font-family: 'Poppins', sans-serif; background-color: var(--background-color);
+            background-image: linear-gradient(135deg, var(--background-color) 0%, #e9f0fa 100%);
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            margin: 0; padding: 20px; box-sizing: border-box;
+        }
+        .calculator-container {
+            background-color: var(--card-background); padding: 35px 40px; border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); width: 100%; max-width: 450px; text-align: center;
+        }
+        h2 { color: var(--text-color); margin-bottom: 30px; font-weight: 700; }
+        .input-group { margin-bottom: 22px; text-align: left; }
+        label { display: block; margin-bottom: 8px; color: var(--label-color); font-weight: 500; font-size: 0.9rem; }
+        input, select {
+            width: 100%; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px;
+            box-sizing: border-box; font-size: 1rem; font-family: 'Poppins', sans-serif;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        input:focus, select:focus {
+            outline: none; border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 82, 212, 0.15);
+        }
+        input:read-only { background-color: #f0f3f8; cursor: not-allowed; }
+        button {
+            width: 100%; padding: 14px; background-image: linear-gradient(45deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.3s ease; margin-top: 10px;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0, 82, 212, 0.2); }
+        #result {
+            margin-top: 30px; padding-top: 25px; border-top: 1px solid var(--border-color);
+            font-size: 1rem; font-weight: 500; color: var(--text-color); text-align: left;
+        }
+        .result-line { display: flex; align-items: center; margin-bottom: 15px; font-size: 1.1rem; }
+        .result-line span { font-size: 1.5rem; margin-right: 15px; width: 30px; text-align: center; }
+        .result-line strong { font-weight: 700; color: var(--primary-color); }
+        .result-line .recommendation { font-size: 0.9rem; color: var(--label-color); line-height: 1.5; }
+        #customSizeInputs { display: none; }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <h2>Tiles Calculator 📐</h2>
+        <div class="input-group">
+            <label for="totalArea">Total Area (in Square Feet)</label>
+            <input type="number" inputmode="decimal" id="totalArea" placeholder="e.g., 150">
+        </div>
+        <div class="input-group">
+            <label for="tileSize">Select Tile Size</label>
+            <select id="tileSize">
+                <option value="" disabled selected>-- Select a Size --</option>
+                <option value="2x4">2 ft x 4 ft</option>
+                <option value="2x2">2 ft x 2 ft</option>
+                <option value="4x4">4 ft x 4 ft</option>
+                <option value="1.5x2">1.5 ft x 2 ft</option>
+                <option value="1x2">1 ft x 2 ft</option>
+                <option value="1x1">1 ft x 1 ft</option>
+                <option value="custom">Custom Size (Enter Manually)</option>
+            </select>
+        </div>
+        <div id="customSizeInputs">
+            <div class="input-group">
+                <label for="tileLength">Custom Tile Length (in feet)</label>
+                <input type="number" inputmode="decimal" id="tileLength" placeholder="e.g., 2.5">
+            </div>
+            <div class="input-group">
+                <label for="tileWidth">Custom Tile Width (in feet)</label>
+                <input type="number" inputmode="decimal" id="tileWidth" placeholder="e.g., 3">
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="tilesPerBox">Tiles per Box</label>
+            <input type="number" inputmode="numeric" id="tilesPerBox" placeholder="Select a size...">
+        </div>
+        <div class="input-group">
+            <label for="boxPrice">Price per Box (₹)</label>
+            <input type="number" inputmode="decimal" id="boxPrice" placeholder="e.g., 450 (Optional)">
+        </div>
+        <button id="calculateBtn">Calculate</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Registering the Service Worker
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').then(registration => {
+              console.log('SW registered: ', registration);
+            }).catch(registrationError => {
+              console.log('SW registration failed: ', registrationError);
+            });
+          });
+        }
+
+        const tileSizeSelect = document.getElementById('tileSize');
+        // ... बाकी का पूरा जावास्क्रिप्ट कोड यहाँ आएगा (कोई बदलाव नहीं)
+        const customSizeInputs = document.getElementById('customSizeInputs');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resultDiv = document.getElementById('result');
+        const tilesPerBoxInput = document.getElementById('tilesPerBox');
+        const boxQuantities = {
+            '2x4': 2, '2x2': 4, '4x4': 2, '1.5x2': 4, '1x2': 8, '1x1': 10
+        };
+        tileSizeSelect.addEventListener('change', function() {
+            const selectedValue = this.value;
+            if (selectedValue === 'custom') {
+                customSizeInputs.style.display = 'block';
+                tilesPerBoxInput.value = '';
+                tilesPerBoxInput.readOnly = false;
+                tilesPerBoxInput.placeholder = 'e.g., 4';
+            } else {
+                customSizeInputs.style.display = 'none';
+                if (boxQuantities[selectedValue]) {
+                    tilesPerBoxInput.value = boxQuantities[selectedValue];
+                    tilesPerBoxInput.readOnly = true;
+                }
+            }
+        });
+        calculateBtn.addEventListener('click', function() {
+            const totalArea = parseFloat(document.getElementById('totalArea').value);
+            const tilesPerBox = parseFloat(tilesPerBoxInput.value);
+            const boxPrice = parseFloat(document.getElementById('boxPrice').value);
+            const selectedSize = tileSizeSelect.value;
+            let tileLength, tileWidth;
+            if (!selectedSize) {
+                resultDiv.innerHTML = `<p style="color: var(--danger-color);">Please select a tile size.</p>`;
+                return;
+            }
+            if (selectedSize === 'custom') {
+                tileLength = parseFloat(document.getElementById('tileLength').value);
+                tileWidth = parseFloat(document.getElementById('tileWidth').value);
+            } else {
+                const dimensions = selectedSize.split('x');
+                tileLength = parseFloat(dimensions[0]);
+                tileWidth = parseFloat(dimensions[1]);
+            }
+            if (isNaN(totalArea) || isNaN(tileLength) || isNaN(tileWidth) || isNaN(tilesPerBox) || totalArea <= 0 || tileLength <= 0 || tileWidth <= 0 || tilesPerBox <= 0) {
+                resultDiv.innerHTML = `<p style="color: var(--danger-color);">Please fill in all required fields correctly.</p>`;
+                return;
+            }
+            const singleTileArea = tileLength * tileWidth;
+            const areaPerBox = singleTileArea * tilesPerBox;
+            const requiredBoxes = totalArea / areaPerBox;
+            const finalBoxes = Math.ceil(requiredBoxes);
+            const wastageSuggestion = Math.ceil(finalBoxes * 1.10);
+            let resultHTML = `<div class="result-line"><span>📦</span><p>You will need a total of <strong>${finalBoxes}</strong> boxes.</p></div>`;
+            let wastageHTML = `<div class="result-line"><span>💡</span><p class="recommendation">It's recommended to get <strong>${wastageSuggestion}</strong> boxes to account for cutting and wastage.</p></div>`;
+            if (!isNaN(boxPrice) && boxPrice > 0) {
+                const totalCost = finalBoxes * boxPrice;
+                const wastageCost = wastageSuggestion * boxPrice;
+                resultHTML += `<div class="result-line"><span>💰</span><p>Total Cost (Exact): <strong>₹ ${totalCost.toLocaleString('en-IN')}</strong></p></div>`;
+                wastageHTML += `<div class="result-line"><span>💳</span><p class="recommendation">Total cost with wastage: <strong>₹ ${wastageCost.toLocaleString('en-IN')}</strong></p></div>`;
+            }
+            resultDiv.innerHTML = resultHTML + wastageHTML;
+        });
+    </script>
+</body>
+              </html>
